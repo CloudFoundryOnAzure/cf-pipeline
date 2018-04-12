@@ -1,0 +1,147 @@
+---
+platform: linux
+
+resource_types:
+- name: email
+  type: docker-image
+  source:
+    repository: pcfseceng/email-resource
+    tag: {{docker-tag}}
+
+resources:
+- name: azure-cpi-concourse-tasks
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/norshtein/azure-cpi-concourse-tasks.git
+- name: integration-configs
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:norshtein/template-store.git
+    private_key: {{config_private_key}}
+- name: cf-deployment-concourse-tasks
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-deployment-concourse-tasks.git
+- name: cf-acceptance-tests
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-acceptance-tests.git
+- name: azure-quickstart-templates
+  type: git
+  source:
+    branch: bump
+    uri: git@github.com:norshtein/azure-quickstart-templates.git
+    private_key: {{azure_template_private_key}}
+- name: sleep
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/norshtein/sleep.git
+- name: send-an-email
+  type: email
+  source:
+    smtp:
+      host: {{smtp-host}}
+      port: {{smtp-port}}
+      username: {{smtp-username}}
+      password: {{smtp-password}}
+    from: {{email-from}}
+    to: [ "846510629@qq.com", "binxi@microsoft.com" ]  
+
+jobs:
+- name: check-new-version
+  public: true
+  plan:
+  - aggregate:
+    - {get: azure-quickstart-templates}
+    - {get: azure-cpi-concourse-tasks}
+  - task: check-new-version
+    file: azure-cpi-concourse-tasks/check-new-version/task.yml
+    params:
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+  - put: azure-quickstart-templates
+    params: {repository: updated-azure-quickstart-templates, rebase: true}
+- name: deploy-cf
+  public: true
+  plan:
+  - aggregate:
+    - {get: azure-cpi-concourse-tasks}
+    - {get: azure-quickstart-templates, trigger: true, passed: [check-new-version]}
+    - {get: integration-configs}
+  - task: deploy-cf
+    file: azure-cpi-concourse-tasks/deploy-cf/task.yml
+    params:
+      TENANT_ID: {{TENANT_ID}}
+      CLIENT_ID: {{CLIENT_ID}}
+      CLIENT_SECRET: {{CLIENT_SECRET}}
+      RESOURCE_GROUP_NAME: {{RESOURCE_GROUP_NAME}}
+      AZURE_REGION: {{AZURE_REGION}}
+      SSH_PUBLIC_KEY: {{SSH_PUBLIC_KEY}}
+      SSH_PRIVATE_KEY: {{SSH_PRIVATE_KEY}}
+    input_mapping:
+      private-key: integration-configs
+      template: azure-quickstart-templates
+  - put: integration-configs
+    params: {repository: updated-integration-configs, rebase: true, force: true}
+- name: login-cf
+  public: true
+  plan:
+  - aggregate:
+    - {get: azure-cpi-concourse-tasks}
+    - {get: integration-configs, trigger: true, passed: [deploy-cf]}
+  - task: login-cf
+    file: azure-cpi-concourse-tasks/login-cf/task.yml 
+- name: pending
+  plan:
+  - aggregate:
+    - {get: integration-configs, trigger: true, passed: [login-cf]}
+    - {get: sleep}
+  - task: sleep
+    file: sleep/task.yml
+    params:
+      SLEEP_TIME: {{SLEEP_TIME}}
+- name: run-cats
+  public: true
+  plan:
+  - aggregate:
+    - {get: cf-deployment-concourse-tasks}
+    - {get: integration-configs, trigger: true, passed: [pending]}
+    - {get: cf-acceptance-tests}
+  - task: run-cats
+    file: cf-deployment-concourse-tasks/run-cats/task.yml
+    input_mapping:
+      integration-config: integration-configs
+    params:
+      CONFIG_FILE_PATH: {{CONFIG_FILE_PATH}}
+      NODES: 2
+- name: delete-resource-group
+  public: true
+  plan:
+  - aggregate:
+    - {get: azure-cpi-concourse-tasks}
+    - {get: integration-configs, trigger: true, passed: [run-cats]}
+  - task: delete-resource-group
+    file: azure-cpi-concourse-tasks/delete-resource-group/task.yml
+    params:
+      TENANT_ID: {{TENANT_ID}}
+      CLIENT_ID: {{CLIENT_ID}}
+      CLIENT_SECRET: {{CLIENT_SECRET}}
+      RESOURCE_GROUP_NAME: {{RESOURCE_GROUP_NAME}}
+    on_success:
+      task: send-email
+      file: azure-cpi-concourse-tasks/send-email/task.yml
+      params:
+        SUBJECT: {{SUBJECT}}
+        BODY: {{BODY}}
+        OUTPUT_SUBJECT_FILE_NAME: email-subject
+        OUTPUT_BODY_FILE_NAME: email-body
+      on_success:
+        put: send-an-email
+        params:
+          subject: email-out/email-subject
+          body: email-out/email-body

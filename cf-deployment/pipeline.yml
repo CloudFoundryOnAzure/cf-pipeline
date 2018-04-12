@@ -1,0 +1,246 @@
+---
+platform: linux
+
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+- name: email
+  type: docker-image
+  source:
+    repository: pcfseceng/email-resource
+    tag: {{docker-tag}}
+
+resources:
+- name: cf-deployment-release-candidate
+  type: git
+  source:
+    branch: release-candidate
+    uri: https://github.com/cloudfoundry/cf-deployment.git
+- name: cats-task-release
+  type: github-release
+  source:
+    user: cloudfoundry
+    repository: cf-deployment-concourse-tasks
+    access_token: {{ACCESS_TOKEN}}
+- name: notify
+  type: slack-notification
+  source:
+    url: {{slack-webhook}}
+- name: send-an-email
+  type: email
+  source:
+    smtp:
+      host: {{smtp-host}}
+      port: {{smtp-port}}
+      username: {{smtp-username}}
+      password: {{smtp-password}}
+    from: {{email-from}}
+    to: [ {{email-to}} ]
+- name: store 
+  type: git
+  source:
+    branch: master
+    uri: git@github.com:norshtein/store.git
+    private_key: {{bblstate_private_key}}
+- name: cf-deployment-concourse-tasks
+  type: git
+  source:
+    branch: pr-request
+    uri: git@github.com:norshtein/cf-deployment-concourse-tasks.git
+    private_key: {{cci_private_key}}
+- name: cf-acceptance-tests
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-acceptance-tests.git
+- name: cf-deployment
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-deployment.git
+- name: sleep
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/norshtein/sleep.git
+- name: azure-cpi-concourse-tasks
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/norshtein/azure-cpi-concourse-tasks.git
+jobs:
+- name: job-run-bbl-up
+  plan:
+  - aggregate:
+    - {get: store}
+    - {get: cf-deployment-concourse-tasks}
+    - {get: cats-task-release, trigger: true}
+    - {get: cf-deployment-release-candidate, trigger: true}
+  - task: task-bbl-up
+    file: cf-deployment-concourse-tasks/bbl-up/task.yml
+    params: 
+      BBL_AZURE_CLIENT_ID: {{BBL_AZURE_CLIENT_ID}} 
+      BBL_AZURE_CLIENT_SECRET: {{BBL_AZURE_CLIENT_SECRET}} 
+      BBL_AZURE_TENANT_ID: {{BBL_AZURE_TENANT_ID}}
+      BBL_AZURE_SUBSCRIPTION_ID: {{BBL_AZURE_SUBSCRIPTION_ID}}
+      BBL_AZURE_REGION: {{BBL_AZURE_REGION}}
+      BBL_IAAS: "azure"
+      BBL_LB_CERT: {{BBL_LB_CERT}}
+      BBL_LB_KEY: {{BBL_LB_KEY}}
+      LB_DOMAIN: {{LB_DOMAIN}}
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      GIT_COMMIT_MESSAGE: {{GIT_COMMIT_MESSAGE}}
+    input_mapping:
+      bbl-state: store
+      bbl-config: store
+  - put: updated-bbl-state
+    resource: store
+    params: {repository: updated-bbl-state , force: true}
+
+- name: job-upload-stemcell
+  serial: true
+  plan:
+  - aggregate:
+    - {get: updated-bbl-state, resource: store, trigger: true, passed: [job-run-bbl-up]}
+    - {get: cf-deployment-concourse-tasks}
+    - {get: cf-deployment}
+  - task: task-upload-stemcell
+    file: cf-deployment-concourse-tasks/bosh-upload-stemcell-from-cf-deployment/task.yml
+    params:
+      INFRASTRUCTURE: azure
+    input_mapping:
+      bbl-state: updated-bbl-state
+  
+- name: job-run-bosh-deploy
+  serial: true
+  plan:
+  - aggregate:
+    - {get: updated-bbl-state, trigger: true, resource: store, passed: [job-upload-stemcell]}
+    - {get: cf-deployment-concourse-tasks,  resource: cf-deployment-concourse-tasks}
+    - {get: cf-deployment, resource: cf-deployment}
+  - task: task-bosh-deploy
+    file: cf-deployment-concourse-tasks/bosh-deploy/task.yml
+    params:
+      SYSTEM_DOMAIN: {{SYSTEM_DOMAIN}}
+      REGENERATE_VARS_STORE: false
+    input_mapping: 
+      bbl-state: updated-bbl-state 
+      vars-store: updated-bbl-state
+      ops-files: cf-deployment
+      vars-files: updated-bbl-state
+  - put: updated-vars-store
+    resource: store
+    params: {repository: updated-vars-store, rebase: true, force: true}
+
+- name: job-update-integration-configs
+  serial: true
+  plan:
+  - aggregate:
+    - {get: updated-vars-store, trigger: true, resource: store, passed: [job-run-bosh-deploy]}
+    - {get: cf-deployment-concourse-tasks}
+  - task: task-update-integration-configs
+    file: cf-deployment-concourse-tasks/update-integration-configs/task.yml
+    params:
+      SYSTEM_DOMAIN: {{SYSTEM_DOMAIN}}
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+    input_mapping:
+      integration-configs: updated-vars-store
+      vars-store: updated-vars-store
+  - put: updated-integration-configs
+    resource: store
+    params: {repository: updated-integration-configs, rebase: true, force: true}  
+- name: job-pending
+  seiral: true
+  plan:
+  - aggregate:
+    - {get: store, trigger: true, passed: [job-update-integration-configs]}
+    - {get: sleep}
+  - task: sleep
+    file: sleep/task.yml
+    params:
+      SLEEP_TIME: {{SLEEP_TIME}}
+- name: job-run-cats
+  serial: true
+  plan:
+  - aggregate:
+    - {get: updated-integration-configs, trigger: true, resource: store, passed: [job-pending]}
+    - {get: cf-deployment-concourse-tasks}
+    - {get: cf-acceptance-tests}
+    - {get: azure-cpi-concourse-tasks}
+  - task: task-run-cats
+    file: cf-deployment-concourse-tasks/run-cats/task.yml
+    input_mapping:
+      integration-config: updated-integration-configs
+      cf-acceptance-tests: cf-acceptance-tests
+    params:
+      CONFIG_FILE_PATH: {{CONFIG_FILE_PATH}}
+      NODES: 2
+      SKIP_REGEXP: "transparently proxies both reserved characters and unsafe characters"
+    on_failure:
+      put: notify
+      params:
+        text: "Pipeline running at http://13.65.103.201:8080/ failed"
+      on_success:
+        task: task-send-email
+        file: azure-cpi-concourse-tasks/send-email/task.yml
+        params:
+          SUBJECT: {{SUBJECT}}
+          BODY: {{BODY}}
+          OUTPUT_SUBJECT_FILE_NAME: email-subject
+          OUTPUT_BODY_FILE_NAME: email-body
+        on_success:
+          put: send-an-email
+          params:
+            subject: email-out/email-subject
+            body: email-out/email-body
+
+- name: job-delete-cf
+  serial: true
+  plan:
+  - aggregate:
+    - {get: bbl-state, trigger: true, resource: store, passed: [job-run-cats]}
+    - {get: cf-deployment-concourse-tasks}
+  - task: task-delete-cf
+    file: cf-deployment-concourse-tasks/bosh-delete-deployment/task.yml
+
+- name: job-bosh-cleanup
+  serial: true
+  plan:
+  - aggregate:
+    - {get: bbl-state, trigger: true, resource: store, passed: [job-delete-cf]}
+    - {get: cf-deployment-concourse-tasks}
+  - task: task-bosh-cleanup
+    file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
+
+- name: job-bbl-destory
+  serial: true
+  plan:
+  - aggregate:
+    - {get: bbl-state, trigger: true, resource: store, passed: [job-bosh-cleanup]}
+    - {get: cf-deployment-concourse-tasks}
+    - {get: azure-cpi-concourse-tasks}
+  - task: task-bbl-destory
+    file: cf-deployment-concourse-tasks/bbl-destroy/task.yml
+    params:  
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      BBL_AZURE_CLIENT_ID: {{BBL_AZURE_CLIENT_ID}}
+      BBL_AZURE_CLIENT_SECRET: {{BBL_AZURE_CLIENT_SECRET}}
+      BBL_AZURE_TENANT_ID: {{BBL_AZURE_TENANT_ID}}
+      BBL_AZURE_SUBSCRIPTION_ID: {{BBL_AZURE_SUBSCRIPTION_ID}}
+    on_failure:
+      task: delete-bbl-dir
+      file: azure-cpi-concourse-tasks/delete-bbl-dir/task.yml
+      params:
+        GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+        GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      on_success:
+        put: store
+        params: {repository: empty-bbl-state, force: true}
+  - put: updated-bbl-state
+    resource: store
+    params: {repository: updated-bbl-state, rebase: true, force: true}   
