@@ -10,7 +10,6 @@ resource_types:
   type: docker-image
   source:
     repository: pcfseceng/email-resource
-    tag: {{docker-tag}}
 
 resources:
 - name: cf-deployment-release-candidate
@@ -21,7 +20,7 @@ resources:
 - name: notify
   type: slack-notification
   source:
-    url: {{slack-webhook}}
+    url: {{SLACK_WEBHOOK}}
 - name: send-an-email
   type: email
   source:
@@ -37,13 +36,12 @@ resources:
   source:
     branch: master
     uri: git@github.com:norshtein/store.git
-    private_key: {{bblstate_private_key}}
+    private_key: {{BBLSTATE_PRIVATE_KEY}}
 - name: cf-deployment-concourse-tasks
   type: git
   source:
     branch: pr-request
-    uri: git@github.com:norshtein/cf-deployment-concourse-tasks.git
-    private_key: {{cci_private_key}}
+    uri: https://github.com/norshtein/cf-deployment-concourse-tasks.git
 - name: cf-acceptance-tests
   type: git
   source:
@@ -175,7 +173,7 @@ jobs:
     on_failure:
       put: notify
       params:
-        text: "Pipeline running at http://13.65.103.201:8080/ failed"
+        text: {{SLACK_TEXT}}
       on_success:
         task: task-send-email
         file: cf-pipeline/lib/send-email/task.yml
