@@ -18,12 +18,6 @@ resources:
   source:
     branch: release-candidate
     uri: https://github.com/cloudfoundry/cf-deployment.git
-- name: cats-task-release
-  type: github-release
-  source:
-    user: cloudfoundry
-    repository: cf-deployment-concourse-tasks
-    access_token: {{ACCESS_TOKEN}}
 - name: notify
   type: slack-notification
   source:
@@ -66,13 +60,26 @@ resources:
     branch: master
     uri: https://github.com/CloudFoundryOnAzure/cf-pipeline.git
 jobs:
+- name: job-create-certs
+  plan:
+  - aggregate:
+    - {get: cf-deployment-release-candidate, trigger: true}
+    - {get: bbl-state, resource: store}
+    - {get: cf-pipeline}
+  - task: task-create-certs
+    file: cf-pipeline/lib/create-cert/task.yml
+    params:
+      PFX_FILE_NAME: {{BBL_LB_CERT}}
+      KEY_NAME: {{BBL_LB_KEY}}
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+  - put: store 
+    params: {repository: updated-bbl-state, force: true}
 - name: job-run-bbl-up
   plan:
   - aggregate:
-    - {get: store}
+    - {get: store, trigger: true, passed: [job-create-certs]}
     - {get: cf-deployment-concourse-tasks}
-    - {get: cats-task-release, trigger: true}
-    - {get: cf-deployment-release-candidate, trigger: true}
   - task: task-bbl-up
     file: cf-deployment-concourse-tasks/bbl-up/task.yml
     params: 
