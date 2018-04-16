@@ -1,0 +1,57 @@
+---
+resources:
+- name: cf-acceptance-tests
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-acceptance-tests.git
+- name: cf-deployment-concourse-tasks
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-deployment-concourse-tasks.git
+- name: integration-config
+  type: git
+  source:
+    branch: master
+    uri: {{INTEGRATION_CONFIG_REPO_URI}}
+    private_key: {{REPO_KEY}}
+- name: azure-cpi-concourse-tasks
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/norshtein/azure-cpi-concourse-tasks.git
+
+jobs:
+- name: generate-integration-config
+  plan:
+  - aggregate:
+    - get: integration-config
+    - get: azure-cpi-concourse-tasks
+  - task: generate-integration-config
+    file: azure-cpi-concourse-tasks/generate-integration-config/task.yml
+    params:
+      API_ENDPOINT: {{API_ENDPOINT}} 
+      APPS_DOMAIN: {{APPS_DOMAIN}} 
+      ADMIN_USER: {{ADMIN_USER}}
+      ADMIN_PASSWORD: {{ADMIN_PASSWORD}}
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
+  - put: integration-config
+    params:
+      force: true
+      repository: updated-integration-config
+- name: run-cats
+  plan:
+  - aggregate:
+    - get: integration-config
+      passed:
+      - generate-integration-config
+      trigger: true
+    - get: cf-acceptance-tests
+    - get: cf-deployment-concourse-tasks
+  - task: run-cats
+    file: cf-deployment-concourse-tasks/run-cats/task.yml
+    params:
+      NODES: 2
+
