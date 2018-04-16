@@ -20,6 +20,6 @@ function main() {
   popd
   
   shopt -s dotglob
-  cp -R "bbl-state" "updated-bbl-state" 
+  cp -R "bbl-state/." "updated-bbl-state/" 
 }
 main
