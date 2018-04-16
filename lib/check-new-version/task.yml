@@ -8,13 +8,13 @@ image_resource:
 
 inputs:
 - name: azure-quickstart-templates
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 
 outputs:
 - name: updated-azure-quickstart-templates
 
 run: 
-  path: azure-cpi-concourse-tasks/check-new-version/task
+  path: cf-pipeline/lib/check-new-version/task
 
 params:
   # The Folder Of Bosh Setup, relative to `azure-quickstart-templates` input

@@ -7,10 +7,10 @@ image_resource:
     repository: microsoft/azure-cli
 
 inputs:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 
 run: 
-  path: azure-cpi-concourse-tasks/delete-resource-group/task
+  path: cf-pipeline/lib/delete-resource-group/task
 
 params:
   # Azure Credentials

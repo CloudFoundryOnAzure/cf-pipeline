@@ -7,14 +7,14 @@ image_resource:
     repository: microsoft/azure-cli
 
 inputs:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 - name: integration-config
 
 outputs:
 - name: updated-integration-config
 
 run: 
-  path: azure-cpi-concourse-tasks/generate-integration-config/task
+  path: cf-pipeline/lib/generate-integration-config/task
 
 params:
   API_ENDPOINT:

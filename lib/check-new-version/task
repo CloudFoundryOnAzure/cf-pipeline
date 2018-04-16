@@ -1,7 +1,7 @@
 #!/bin/bash
 set -xeu
 
-source azure-cpi-concourse-tasks/shared-functions
+source cf-pipeline/lib/shared-functions
 
 function commit_azure_templates() {
   pushd azure-quickstart-templates

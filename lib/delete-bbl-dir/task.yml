@@ -7,14 +7,14 @@ image_resource:
     repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
 
 inputs:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 - name: bbl-state
 
 outputs:
 - name: empty-bbl-state
 
 run: 
-  path: azure-cpi-concourse-tasks/delete-bbl-dir/task
+  path: cf-pipeline/lib/delete-bbl-dir/task
 
 params:
   BBL_STATE_DIR: bbl-state 

@@ -6,7 +6,7 @@ image_resource:
   source: {repository: concourse/buildroot, tag: git}
 
 inputs:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 
 outputs:
 - name: email-out
@@ -17,4 +17,4 @@ params:
   SUBJECT:
   BODY:
 run:
-  path: azure-cpi-concourse-tasks/send-email/task.sh
+  path: cf-pipeline/lib/send-email/task.sh

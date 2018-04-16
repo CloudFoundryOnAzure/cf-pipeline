@@ -7,11 +7,11 @@ image_resource:
     repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
 
 inputs:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 - name: integration-configs
 
 run: 
-  path: azure-cpi-concourse-tasks/login-cf/task
+  path: cf-pipeline/lib/login-cf/task
 
 params:
   # Integration File Template

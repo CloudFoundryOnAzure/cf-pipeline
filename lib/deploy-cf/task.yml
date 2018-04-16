@@ -7,7 +7,7 @@ image_resource:
     repository: microsoft/azure-cli
 
 inputs:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
 - name: template
 - name: integration-configs
 - name: private-key
@@ -15,7 +15,7 @@ outputs:
 - name: updated-integration-configs
 
 run: 
-  path: azure-cpi-concourse-tasks/deploy-cf/task
+  path: cf-pipeline/lib/deploy-cf/task
 
 params:
   # Azure Credentials
