@@ -1,0 +1,25 @@
+#!/bin/bash
+set -xeu
+
+function commit_bbl_state_dir() {
+  git config user.name "${GIT_COMMIT_USERNAME}"
+  git config user.email "${GIT_COMMIT_EMAIL}"
+  git add --all .
+  git commit -m "Create cert" 
+}
+
+function main() {
+  pushd bbl-state
+    mkdir ${BBL_STATE_DIR}
+    pushd ${BBL_STATE_DIR}
+      openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout www.example.com.key -out www.example.com.cert
+      openssl pkcs12 -export -out ${PFX_FILE_NAME} -inkey www.example.com.key -in www.example.com.cert -passout pass:tmppw
+      echo "tmppw" > ${KEY_NAME}
+    popd
+    commit_bbl_state_dir
+  popd
+  
+  shopt -s dotglob
+  cp -R "bbl-state" "updated-bbl-state" 
+}
+main

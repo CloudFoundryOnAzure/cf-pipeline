@@ -1,0 +1,25 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: busybox
+
+inputs:
+- name: cf-pipeline
+- name: bbl-state
+
+outputs:
+- name: updated-bbl-state
+
+run: 
+  path: cf-pipeline/lib/create-cert/task
+
+params:
+  # BBL State folder
+  # - The path is relative to `bbl-state` input
+  BBL_STATE_DIR: bbl-state
+  
+  PFX_FILE_NAME: PFX_FILE
+  KEY_NAME: KEY
