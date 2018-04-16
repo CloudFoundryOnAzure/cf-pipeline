@@ -60,16 +60,11 @@ resources:
   source:
     branch: master
     uri: https://github.com/cloudfoundry/cf-deployment.git
-- name: sleep
+- name: cf-pipeline
   type: git
   source:
     branch: master
-    uri: https://github.com/norshtein/sleep.git
-- name: azure-cpi-concourse-tasks
-  type: git
-  source:
-    branch: master
-    uri: https://github.com/norshtein/azure-cpi-concourse-tasks.git
+    uri: https://github.com/CloudFoundryOnAzure/cf-pipeline.git
 jobs:
 - name: job-run-bbl-up
   plan:
@@ -153,24 +148,14 @@ jobs:
   - put: updated-integration-configs
     resource: store
     params: {repository: updated-integration-configs, rebase: true, force: true}  
-- name: job-pending
-  seiral: true
-  plan:
-  - aggregate:
-    - {get: store, trigger: true, passed: [job-update-integration-configs]}
-    - {get: sleep}
-  - task: sleep
-    file: sleep/task.yml
-    params:
-      SLEEP_TIME: {{SLEEP_TIME}}
 - name: job-run-cats
   serial: true
   plan:
   - aggregate:
-    - {get: updated-integration-configs, trigger: true, resource: store, passed: [job-pending]}
+    - {get: updated-integration-configs, trigger: true, resource: store, passed: [job-update-integration-configs]}
     - {get: cf-deployment-concourse-tasks}
     - {get: cf-acceptance-tests}
-    - {get: azure-cpi-concourse-tasks}
+    - {get: cf-pipeline}
   - task: task-run-cats
     file: cf-deployment-concourse-tasks/run-cats/task.yml
     input_mapping:
@@ -186,7 +171,7 @@ jobs:
         text: "Pipeline running at http://13.65.103.201:8080/ failed"
       on_success:
         task: task-send-email
-        file: azure-cpi-concourse-tasks/send-email/task.yml
+        file: cf-pipeline/lib/send-email/task.yml
         params:
           SUBJECT: {{SUBJECT}}
           BODY: {{BODY}}
@@ -222,7 +207,7 @@ jobs:
   - aggregate:
     - {get: bbl-state, trigger: true, resource: store, passed: [job-bosh-cleanup]}
     - {get: cf-deployment-concourse-tasks}
-    - {get: azure-cpi-concourse-tasks}
+    - {get: cf-pipeline} 
   - task: task-bbl-destory
     file: cf-deployment-concourse-tasks/bbl-destroy/task.yml
     params:  
@@ -234,7 +219,7 @@ jobs:
       BBL_AZURE_SUBSCRIPTION_ID: {{BBL_AZURE_SUBSCRIPTION_ID}}
     on_failure:
       task: delete-bbl-dir
-      file: azure-cpi-concourse-tasks/delete-bbl-dir/task.yml
+      file: cf-pipeline/lib/delete-bbl-dir/task.yml
       params:
         GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
         GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
