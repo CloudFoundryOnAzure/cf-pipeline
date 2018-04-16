@@ -3,15 +3,16 @@ set -xeu
 
 function main() {
   pushd "bbl-state/${BBL_STATE_DIR}"
-  rm -rf $(ls)  
+    rm -rf $(ls)  
   popd
   
-  git config user.name ${GIT_COMMIT_USERNAME}
-  git config user.email ${GIT_COMMIT_EMAIL}
-  git add --all .
-  git commit -m "Remove bbl-state dir"
-
   shopt -s dotglob
   cp -R bbl-state/. empty-bbl-state/
+  pushd "empty-bbl-state"
+    git config user.name ${GIT_COMMIT_USERNAME}
+    git config user.email ${GIT_COMMIT_EMAIL}
+    git add --all .
+    git commit -m "Remove bbl-state dir"
+  popd
 }
 main
