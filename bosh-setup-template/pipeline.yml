@@ -9,11 +9,11 @@ resource_types:
     tag: {{docker-tag}}
 
 resources:
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
   type: git
   source:
     branch: master
-    uri: https://github.com/norshtein/azure-cpi-concourse-tasks.git
+    uri: https://github.com/CloudFoundryOnAzure/cf-pipeline.git
 - name: integration-configs
   type: git
   source:
@@ -36,11 +36,6 @@ resources:
     branch: bump
     uri: git@github.com:norshtein/azure-quickstart-templates.git
     private_key: {{azure_template_private_key}}
-- name: sleep
-  type: git
-  source:
-    branch: master
-    uri: https://github.com/norshtein/sleep.git
 - name: send-an-email
   type: email
   source:
@@ -58,9 +53,9 @@ jobs:
   plan:
   - aggregate:
     - {get: azure-quickstart-templates}
-    - {get: azure-cpi-concourse-tasks}
+    - {get: cf-pipeline}
   - task: check-new-version
-    file: azure-cpi-concourse-tasks/check-new-version/task.yml
+    file: cf-pipeline/lib/check-new-version/task.yml
     params:
       GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
       GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
@@ -70,11 +65,11 @@ jobs:
   public: true
   plan:
   - aggregate:
-    - {get: azure-cpi-concourse-tasks}
+    - {get: cf-pipeline}
     - {get: azure-quickstart-templates, trigger: true, passed: [check-new-version]}
     - {get: integration-configs}
   - task: deploy-cf
-    file: azure-cpi-concourse-tasks/deploy-cf/task.yml
+    file: cf-pipeline/lib/deploy-cf/task.yml
     params:
       TENANT_ID: {{TENANT_ID}}
       CLIENT_ID: {{CLIENT_ID}}
@@ -92,25 +87,16 @@ jobs:
   public: true
   plan:
   - aggregate:
-    - {get: azure-cpi-concourse-tasks}
+    - {get: cf-pipeline}
     - {get: integration-configs, trigger: true, passed: [deploy-cf]}
   - task: login-cf
-    file: azure-cpi-concourse-tasks/login-cf/task.yml 
-- name: pending
-  plan:
-  - aggregate:
-    - {get: integration-configs, trigger: true, passed: [login-cf]}
-    - {get: sleep}
-  - task: sleep
-    file: sleep/task.yml
-    params:
-      SLEEP_TIME: {{SLEEP_TIME}}
+    file: cf-pipeline/lib/login-cf/task.yml 
 - name: run-cats
   public: true
   plan:
   - aggregate:
     - {get: cf-deployment-concourse-tasks}
-    - {get: integration-configs, trigger: true, passed: [pending]}
+    - {get: integration-configs, trigger: true, passed: [login-cf]}
     - {get: cf-acceptance-tests}
   - task: run-cats
     file: cf-deployment-concourse-tasks/run-cats/task.yml
@@ -123,10 +109,10 @@ jobs:
   public: true
   plan:
   - aggregate:
-    - {get: azure-cpi-concourse-tasks}
+    - {get: cf-pipeline}
     - {get: integration-configs, trigger: true, passed: [run-cats]}
   - task: delete-resource-group
-    file: azure-cpi-concourse-tasks/delete-resource-group/task.yml
+    file: cf-pipeline/lib/delete-resource-group/task.yml
     params:
       TENANT_ID: {{TENANT_ID}}
       CLIENT_ID: {{CLIENT_ID}}
@@ -134,7 +120,7 @@ jobs:
       RESOURCE_GROUP_NAME: {{RESOURCE_GROUP_NAME}}
     on_success:
       task: send-email
-      file: azure-cpi-concourse-tasks/send-email/task.yml
+      file: cf-pipeline/lib/send-email/task.yml
       params:
         SUBJECT: {{SUBJECT}}
         BODY: {{BODY}}
