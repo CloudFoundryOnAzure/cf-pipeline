@@ -1,0 +1,55 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: microsoft/azure-cli
+
+inputs:
+- name: azure-cpi-concourse-tasks
+- name: template
+- name: integration-configs
+- name: private-key
+outputs:
+- name: updated-integration-configs
+
+run: 
+  path: azure-cpi-concourse-tasks/deploy-cf/task
+
+params:
+  # Azure Credentials
+  # - Required
+  TENANT_ID:
+  CLIENT_ID:
+  CLIENT_SECRET:
+  
+  # Virtual Machine Settings
+  # - Optional
+  VM_NAME: testMachine
+  ADMIN_USERNAME: azure
+
+  # Resrouce Settings
+  # - Required
+  RESROUCE_GROUP_NAME:
+  AZURE_REGION:
+
+  # SSH Key
+  # - Public key, required, ssh public key of your devbox, a string
+  SSH_PUBLIC_KEY: 
+  # - Private key, required, path relative to `private-key` folder
+  SSH_PRIVATE_KEY:
+  
+  # Template File and Parameter File
+  # - The path is relative to the `template` input
+  TEMPLATE_FILE: bosh-setup/azuredeploy.json
+  PARAMETER_FILE: bosh-setup/azuredeploy.parameters.json
+  
+  # Integration File Template
+  # - The path is relative to the `integration-configs` input
+  CATS_INTEGRATION_CONFIG_FILE: cats_integration_config.json
+
+  # Git Information
+  # - Optional, you may change to your own
+  GIT_COMMIT_USERNAME: norshtein
+  GIT_COMMIT_EMAIL: t-tosi@microsoft.com

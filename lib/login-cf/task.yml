@@ -1,0 +1,19 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
+
+inputs:
+- name: azure-cpi-concourse-tasks
+- name: integration-configs
+
+run: 
+  path: azure-cpi-concourse-tasks/login-cf/task
+
+params:
+  # Integration File Template
+  # - The path is relative to the `integration-configs` input
+  CATS_INTEGRATION_CONFIG_FILE: cats_integration_config.json 

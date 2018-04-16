@@ -1,0 +1,52 @@
+#!/bin/bash
+set -xeu
+
+function commit_integration_dir(){
+  pushd integration-config
+    git config user.name "${GIT_COMMIT_USERNAME}"
+    git config user.email "${GIT_COMMIT_EMAIL}"
+    git add integration_config.json
+    git commit -m "Update Integration config"
+  popd
+    
+  shopt -s dotglob
+  cp -R "integration-config/." "updated-integration-config/" 
+}
+
+function main() {
+pushd integration-config
+cat > integration_config.json <<EOF
+{
+  "api": "${API_ENDPOINT}",
+  "apps_domain": "${APPS_DOMAIN}",
+  "admin_user": "${ADMIN_USER}",
+  "admin_password": "${ADMIN_PASSWORD}",
+  "skip_ssl_validation": true,
+  "use_http": true,
+  "include_apps": true,
+  "include_backend_compatibility": false,
+  "include_container_networking": false,
+  "include_detect": true,
+  "include_docker": false,
+  "include_internet_dependent": false,
+  "include_isolation_segments": false,
+  "include_persistent_app": false,
+  "include_private_docker_registry": false,
+  "include_privileged_container_support": false,
+  "include_route_services": false,
+  "include_routing": true,
+  "include_routing_isolation_segments": false,
+  "include_security_groups": true,
+  "include_services": true,
+  "include_ssh": false,
+  "include_sso": true,
+  "include_tasks": true,
+  "include_v3": true,
+  "include_zipkin": false
+}
+EOF
+popd
+}
+
+trap commit_integration_dir EXIT
+main

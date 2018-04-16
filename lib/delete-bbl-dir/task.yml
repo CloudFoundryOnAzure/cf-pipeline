@@ -1,0 +1,26 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
+
+inputs:
+- name: azure-cpi-concourse-tasks
+- name: bbl-state
+
+outputs:
+- name: empty-bbl-state
+
+run: 
+  path: azure-cpi-concourse-tasks/delete-bbl-dir/task
+
+params:
+  BBL_STATE_DIR: bbl-state 
+  # - Path to the directory containing the `bbl-state.json` file
+  # - The path is relative to the `bbl-state` input
+  # - It will be set to empty after running the task
+  
+  GIT_COMMIT_USERNAME:
+  GIT_COMMIT_EMAIL:

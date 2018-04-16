@@ -1,0 +1,30 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: microsoft/azure-cli
+
+inputs:
+- name: azure-quickstart-templates
+- name: azure-cpi-concourse-tasks
+
+outputs:
+- name: updated-azure-quickstart-templates
+
+run: 
+  path: azure-cpi-concourse-tasks/check-new-version/task
+
+params:
+  # The Folder Of Bosh Setup, relative to `azure-quickstart-templates` input
+  # - Required
+  BOSH_SETUP_FOLDER: bosh-setup
+
+  # Update Script Name And Deploy Template
+  # - Required, relative to `BOSH_SETUP_PATH` param
+  SCRIPT_NAME: update-manifests.sh
+  DEPLOY_TEMPLATE: azuredeploy.json
+  
+  GIT_COMMIT_USERNAME:
+  GIT_COMMIT_EMAIL:

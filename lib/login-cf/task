@@ -1,0 +1,17 @@
+#!/bin/bash
+set -xeu
+
+source azure-cpi-concourse-tasks/shared-functions
+
+function main() {
+  config_file="integration-configs/${CATS_INTEGRATION_CONFIG_FILE}"
+
+  api_endpoint=$(jq -r .api ${config_file})
+  admin_user=$(jq -r .admin_user ${config_file})
+  admin_password=$(jq -r .admin_password ${config_file})
+
+  login_cf="cf login -a ${api_endpoint} -u ${admin_user} -p ${admin_password} --skip-ssl-validation"
+  retryop "${login_cf}"
+}
+
+main

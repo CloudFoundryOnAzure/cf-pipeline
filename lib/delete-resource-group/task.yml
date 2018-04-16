@@ -1,0 +1,24 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: microsoft/azure-cli
+
+inputs:
+- name: azure-cpi-concourse-tasks
+
+run: 
+  path: azure-cpi-concourse-tasks/delete-resource-group/task
+
+params:
+  # Azure Credentials
+  # - Required
+  TENANT_ID:
+  CLIENT_ID:
+  CLIENT_SECRET:
+  
+  # Resrouce Group Name 
+  # - Required
+  RESROUCE_GROUP_NAME:

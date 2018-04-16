@@ -1,0 +1,32 @@
+#!/bin/bash
+set -xeu
+
+source azure-cpi-concourse-tasks/shared-functions
+
+function commit_azure_templates() {
+  pushd azure-quickstart-templates
+    git config user.name "${GIT_COMMIT_USERNAME}"
+    git config user.email "${GIT_COMMIT_EMAIL}"
+    git add .
+    git commit -m "Update bosh setup manifest"
+  popd
+  git clone azure-quickstart-templates updated-azure-quickstart-templates
+}
+function main() {
+  pushd azure-quickstart-templates/${BOSH_SETUP_FOLDER}
+  ./${SCRIPT_NAME}
+  wget http://bosh.cloudfoundry.org/stemcells/bosh-azure-hyperv-ubuntu-trusty-go_agent -O page
+  stemcell_version=$(awk '/./{line=$0} END{print line}' manifests/cf-deployment.yml | awk '{print $2}' | sed 's/"//g')
+  stemcell_url="https://bosh.io/d/stemcells/bosh-azure-hyperv-ubuntu-trusty-go_agent?v=${stemcell_version}"
+  china_stemcell_url="https://mirror.azure.cn/bosh/bosh-azure-stemcells/bosh-stemcell-${stemcell_version}-azure-hyperv-ubuntu-trusty-go_agent.tgz"
+  stemcell_sha1=$(cat page | awk '/<span class="file-md5">/' | grep -o ">.* " | awk 'NR==1{print $1}' | cut -b 2-)
+
+  change_json_field .variables.environmentAzure.stemcellUrl \"${stemcell_url}\" ${DEPLOY_TEMPLATE}
+  change_json_field .variables.environmentAzure.stemcellSha1 \"${stemcell_sha1}\" ${DEPLOY_TEMPLATE}
+  change_json_field .variables.environmentAzureChinaCloud.stemcellUrl \"${china_stemcell_url}\" ${DEPLOY_TEMPLATE}
+  change_json_field .variables.environmentAzureChinaCloud.stemcellSha1 \"${stemcell_sha1}\" ${DEPLOY_TEMPLATE}
+  rm page
+  popd
+}
+trap commit_azure_templates EXIT
+main
