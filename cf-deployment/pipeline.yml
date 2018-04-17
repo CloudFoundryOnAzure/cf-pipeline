@@ -92,7 +92,6 @@ jobs:
       LB_DOMAIN: {{LB_DOMAIN}}
       GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
       GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
-      GIT_COMMIT_MESSAGE: {{GIT_COMMIT_MESSAGE}}
     input_mapping:
       bbl-state: store
       bbl-config: store
