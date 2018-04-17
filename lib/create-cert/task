@@ -10,7 +10,7 @@ function commit_bbl_state_dir() {
 
 function main() {
   pushd bbl-state
-    mkdir ${BBL_STATE_DIR}
+    mkdir -p ${BBL_STATE_DIR}
     pushd ${BBL_STATE_DIR}
       openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" -keyout www.example.com.key -out www.example.com.cert
       openssl pkcs12 -export -out ${PFX_FILE_NAME} -inkey www.example.com.key -in www.example.com.cert -passout pass:tmppw
