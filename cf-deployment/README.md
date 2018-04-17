@@ -8,6 +8,12 @@ This is cf-deployment pipeline for Azure. The pipeline trigger on new commit on 
 
 In the pipeline, only one job `job-create-certs` is not from [cf-deployment-concourse-tasks](https://github.com/cloudfoundry/cf-deployment-concourse-tasks) repo. This job is used for creating cert, which will be used in the next job `job-run-bbl-up` . Each of other jobs contains exactly one task in  [cf-deployment-concourse-tasks](https://github.com/cloudfoundry/cf-deployment-concourse-tasks) repo, you can get detailed information of them in the [doc](https://github.com/cloudfoundry/cf-deployment-concourse-tasks#tasks).
 
+## Prerequisite
+
+- A concourse environment for running pipeline. You can create concourse using Azure [template](https://github.com/Azure/azure-quickstart-templates/tree/master/concourse-ci).
+- A private git repo, this repo is used to store and transfer sensitive informations. For example, the private key of the bosh director, the admin password of cloud foundry will be stored in this repo.
+- An Azure service principal. It is used by bosh director to create resources. You can learn how to create service princiapl [here](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2Fazure%2Fazure-resource-manager%2Ftoc.json&view=azure-cli-latest).
+
 ## Parameters
 
 There are three parameters files: `credentials.yml` , `email-credential.yml` , `slack-credential.yml` . You should fill all of them. The following is detailed description of parameters:
@@ -44,6 +50,8 @@ There are three parameters files: `credentials.yml` , `email-credential.yml` , `
   # Used in run-cats, usually you don't change it
   CONFIG_FILE_PATH: cats_integration_config.json
   ```
+
+  ​
 
 - In `email-credential.yml`: these are parameters used to send email, you should change them to your own, for example:
 
