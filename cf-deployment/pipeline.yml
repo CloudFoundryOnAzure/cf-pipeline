@@ -1,6 +1,4 @@
 ---
-platform: linux
-
 resource_types:
 - name: slack-notification
   type: docker-image
@@ -57,14 +55,15 @@ resources:
   source:
     branch: master
     uri: https://github.com/CloudFoundryOnAzure/cf-pipeline.git
+
 jobs:
-- name: job-create-certs
+- name: create-certs-for-application-gateway
   plan:
   - aggregate:
     - {get: cf-deployment-release-candidate, trigger: true}
     - {get: bbl-state, resource: store}
     - {get: cf-pipeline}
-  - task: task-create-certs
+  - task: create-certs-for-application-gateway
     file: cf-pipeline/lib/create-cert/task.yml
     params:
       PFX_FILE_NAME: {{BBL_LB_CERT}}
@@ -72,13 +71,14 @@ jobs:
       GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
       GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
   - put: store 
-    params: {repository: updated-bbl-state, force: true}
-- name: job-run-bbl-up
+    params: {repository: updated-bbl-state, rebase: true}
+- name: bbl-up
   plan:
   - aggregate:
-    - {get: store, trigger: true, passed: [job-create-certs]}
+    - {get: bbl-state, resource: store, trigger: true, passed: [create-certs-for-application-gateway]}
+    - {get: bbl-config, resource: store}
     - {get: cf-deployment-concourse-tasks}
-  - task: task-bbl-up
+  - task: bbl-up
     file: cf-deployment-concourse-tasks/bbl-up/task.yml
     params: 
       BBL_AZURE_CLIENT_ID: {{BBL_AZURE_CLIENT_ID}} 
@@ -92,55 +92,49 @@ jobs:
       LB_DOMAIN: {{LB_DOMAIN}}
       GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
       GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
-    input_mapping:
-      bbl-state: store
-      bbl-config: store
-  - put: updated-bbl-state
+  - put: bbl-state
     resource: store
-    params: {repository: updated-bbl-state , force: true}
+    params: {repository: updated-bbl-state , rebase: true}
 
-- name: job-upload-stemcell
+- name: bosh-upload-stemcell
   serial: true
   plan:
   - aggregate:
-    - {get: updated-bbl-state, resource: store, trigger: true, passed: [job-run-bbl-up]}
+    - {get: bbl-state, resource: store, trigger: true, passed: [bbl-up]}
     - {get: cf-deployment-concourse-tasks}
     - {get: cf-deployment}
-  - task: task-upload-stemcell
+  - task: bosh-upload-stemcell
     file: cf-deployment-concourse-tasks/bosh-upload-stemcell-from-cf-deployment/task.yml
     params:
       INFRASTRUCTURE: azure
-    input_mapping:
-      bbl-state: updated-bbl-state
   
-- name: job-run-bosh-deploy
+- name: bosh-deploy-cf
   serial: true
   plan:
   - aggregate:
-    - {get: updated-bbl-state, trigger: true, resource: store, passed: [job-upload-stemcell]}
-    - {get: cf-deployment-concourse-tasks,  resource: cf-deployment-concourse-tasks}
-    - {get: cf-deployment, resource: cf-deployment}
-  - task: task-bosh-deploy
+    - {get: bbl-state, trigger: true, resource: store, passed: [bosh-upload-stemcell]}
+    - {get: cf-deployment-concourse-tasks}
+    - {get: cf-deployment}
+  - task: bosh-deploy-cf
     file: cf-deployment-concourse-tasks/bosh-deploy/task.yml
     params:
       SYSTEM_DOMAIN: {{SYSTEM_DOMAIN}}
       REGENERATE_VARS_STORE: false
     input_mapping: 
-      bbl-state: updated-bbl-state 
-      vars-store: updated-bbl-state
+      vars-store: bbl-state
       ops-files: cf-deployment
-      vars-files: updated-bbl-state
+      vars-files: bbl-state
   - put: updated-vars-store
     resource: store
-    params: {repository: updated-vars-store, rebase: true, force: true}
+    params: {repository: updated-vars-store, rebase: true}
 
-- name: job-update-integration-configs
+- name: update-integration-configs
   serial: true
   plan:
   - aggregate:
-    - {get: updated-vars-store, trigger: true, resource: store, passed: [job-run-bosh-deploy]}
+    - {get: updated-vars-store, trigger: true, resource: store, passed: [bosh-deploy-cf]}
     - {get: cf-deployment-concourse-tasks}
-  - task: task-update-integration-configs
+  - task: update-integration-configs
     file: cf-deployment-concourse-tasks/update-integration-configs/task.yml
     params:
       SYSTEM_DOMAIN: {{SYSTEM_DOMAIN}}
@@ -151,16 +145,17 @@ jobs:
       vars-store: updated-vars-store
   - put: updated-integration-configs
     resource: store
-    params: {repository: updated-integration-configs, rebase: true, force: true}  
-- name: job-run-cats
+    params: {repository: updated-integration-configs, rebase: true}  
+
+- name: run-cats
   serial: true
   plan:
   - aggregate:
-    - {get: updated-integration-configs, trigger: true, resource: store, passed: [job-update-integration-configs]}
+    - {get: updated-integration-configs, trigger: true, resource: store, passed: [update-integration-configs]}
     - {get: cf-deployment-concourse-tasks}
     - {get: cf-acceptance-tests}
     - {get: cf-pipeline}
-  - task: task-run-cats
+  - task: run-cats
     file: cf-deployment-concourse-tasks/run-cats/task.yml
     input_mapping:
       integration-config: updated-integration-configs
@@ -187,32 +182,32 @@ jobs:
             subject: email-out/email-subject
             body: email-out/email-body
 
-- name: job-delete-cf
+- name: bosh-delete-cf
   serial: true
   plan:
   - aggregate:
-    - {get: bbl-state, trigger: true, resource: store, passed: [job-run-cats]}
+    - {get: bbl-state, trigger: true, resource: store, passed: [run-cats]}
     - {get: cf-deployment-concourse-tasks}
-  - task: task-delete-cf
+  - task: bosh-delete-cf
     file: cf-deployment-concourse-tasks/bosh-delete-deployment/task.yml
 
-- name: job-bosh-cleanup
+- name: bosh-cleanup
   serial: true
   plan:
   - aggregate:
-    - {get: bbl-state, trigger: true, resource: store, passed: [job-delete-cf]}
+    - {get: bbl-state, trigger: true, resource: store, passed: [bosh-delete-cf]}
     - {get: cf-deployment-concourse-tasks}
-  - task: task-bosh-cleanup
+  - task: bosh-cleanup
     file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
 
-- name: job-bbl-destory
+- name: bbl-destory
   serial: true
   plan:
   - aggregate:
-    - {get: bbl-state, trigger: true, resource: store, passed: [job-bosh-cleanup]}
+    - {get: bbl-state, trigger: true, resource: store, passed: [bosh-cleanup]}
     - {get: cf-deployment-concourse-tasks}
     - {get: cf-pipeline} 
-  - task: task-bbl-destory
+  - task: bbl-destory
     file: cf-deployment-concourse-tasks/bbl-destroy/task.yml
     params:  
       GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
@@ -232,4 +227,4 @@ jobs:
         params: {repository: empty-bbl-state, force: true}
   - put: updated-bbl-state
     resource: store
-    params: {repository: updated-bbl-state, rebase: true, force: true}   
+    params: {repository: updated-bbl-state, rebase: true}   
