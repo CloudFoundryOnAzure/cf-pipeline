@@ -32,8 +32,8 @@ resources:
 - name: store 
   type: git
   source:
-    branch: master
-    uri: git@github.com:norshtein/store.git
+    branch: {{BBLSTATE_BRANCH}}
+    uri: {{BBLSTATE_REPO_URI}}
     private_key: {{BBLSTATE_PRIVATE_KEY}}
 - name: cf-deployment-concourse-tasks
   type: git

@@ -27,6 +27,8 @@ There are three parameters files: `credentials.yml` , `email-credential.yml` , `
   GIT_COMMIT_USERNAME: my_username
 
   # This is the private key of the store repo.
+  BBLSTATE_REPO_URI: git@github.com:username/repo.git
+  BBLSTATE_BRANCH: master
   BBLSTATE_PRIVATE_KEY: |
       -----BEGIN RSA PRIVATE KEY-----
       ...
