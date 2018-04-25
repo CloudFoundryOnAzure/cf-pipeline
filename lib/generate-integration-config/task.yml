@@ -23,5 +23,5 @@ params:
   ADMIN_PASSWORD:
   
   # Username and email using to push to integration repo.You should replace with your own. 
-  GIT_COMMIT_USERNAME: norshtein
-  GIT_COMMIT_EMAIL: t-tosi@microsoft.com
+  GIT_COMMIT_USERNAME: 
+  GIT_COMMIT_EMAIL: 

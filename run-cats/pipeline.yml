@@ -16,20 +16,20 @@ resources:
     branch: master
     uri: {{INTEGRATION_CONFIG_REPO_URI}}
     private_key: {{REPO_KEY}}
-- name: azure-cpi-concourse-tasks
+- name: cf-pipeline
   type: git
   source:
     branch: master
-    uri: https://github.com/norshtein/azure-cpi-concourse-tasks.git
+    uri: https://github.com/CloudFoundryOnAzure/cf-pipeline.git
 
 jobs:
 - name: generate-integration-config
   plan:
   - aggregate:
     - get: integration-config
-    - get: azure-cpi-concourse-tasks
+    - get: cf-pipeline
   - task: generate-integration-config
-    file: azure-cpi-concourse-tasks/generate-integration-config/task.yml
+    file: cf-pipeline/lib/generate-integration-config/task.yml
     params:
       API_ENDPOINT: {{API_ENDPOINT}} 
       APPS_DOMAIN: {{APPS_DOMAIN}} 

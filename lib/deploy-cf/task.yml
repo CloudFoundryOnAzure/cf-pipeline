@@ -51,5 +51,5 @@ params:
 
   # Git Information
   # - Optional, you may change to your own
-  GIT_COMMIT_USERNAME: norshtein
-  GIT_COMMIT_EMAIL: t-tosi@microsoft.com
+  GIT_COMMIT_USERNAME: 
+  GIT_COMMIT_EMAIL: 
