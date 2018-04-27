@@ -37,7 +37,7 @@ params:
   # SSH Key
   # - Public key, required, ssh public key of your devbox, a string
   SSH_PUBLIC_KEY: 
-  # - Private key, required, path relative to `private-key` folder
+  # - Private key, required, ssh private key of your devbox, a string 
   SSH_PRIVATE_KEY:
   
   # Template File and Parameter File

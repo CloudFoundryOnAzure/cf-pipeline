@@ -46,9 +46,10 @@ function main() {
   # Fetch cloud foundry information
   local fetch_password
   local fetch_system_domain
-  fetch_password="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null  -i private-key/${SSH_PRIVATE_KEY} ${ADMIN_USERNAME}@${ip}:/home/${ADMIN_USERNAME}/cf-deployment-vars.yml ./"
-  fetch_system_domain="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null  -i private-key/${SSH_PRIVATE_KEY} ${ADMIN_USERNAME}@${ip}:/home/${ADMIN_USERNAME}/login_cloud_foundry.sh ./"
-  chmod 600 private-key/${SSH_PRIVATE_KEY}
+  fetch_password="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i pkfile ${ADMIN_USERNAME}@${ip}:/home/${ADMIN_USERNAME}/cf-deployment-vars.yml ./"
+  fetch_system_domain="scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i pkfile ${ADMIN_USERNAME}@${ip}:/home/${ADMIN_USERNAME}/login_cloud_foundry.sh ./"
+  echo "$SSH_PRIVATE_KEY" > pkfile
+  chmod 600 pkfile
   retryop "$fetch_password"
   retryop "$fetch_system_domain"
   
