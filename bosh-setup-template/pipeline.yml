@@ -17,9 +17,9 @@ resources:
 - name: integration-configs
   type: git
   source:
-    branch: master
-    uri: git@github.com:norshtein/template-store.git
-    private_key: {{config_private_key}}
+    branch: {{CONFIG_BRANCH}}
+    uri: {{CONFIG_REPO_URI}}
+    private_key: {{CONFIG_PRIVATE_KEY}}
 - name: cf-deployment-concourse-tasks
   type: git
   source:
@@ -33,9 +33,9 @@ resources:
 - name: azure-quickstart-templates
   type: git
   source:
-    branch: bump
-    uri: git@github.com:norshtein/azure-quickstart-templates.git
-    private_key: {{azure_template_private_key}}
+    branch: {{AZURE_TEMPLATE_BRANCH}}
+    uri: {{AZURE_TEMPLATE_REPO_URI}}
+    private_key: {{AZURE_TEMPLATE_PRIVATE_KEY}}
 - name: send-an-email
   type: email
   source:
@@ -45,7 +45,7 @@ resources:
       username: {{smtp-username}}
       password: {{smtp-password}}
     from: {{email-from}}
-    to: [ "846510629@qq.com", "binxi@microsoft.com" ]  
+    to: [ {{email-to}} ]  
 
 jobs:
 - name: check-new-version
