@@ -50,6 +50,6 @@ params:
   CATS_INTEGRATION_CONFIG_FILE: cats_integration_config.json
 
   # Git Information
-  # - Optional, you may change to your own
+  # - Required, you should change to your own
   GIT_COMMIT_USERNAME: 
   GIT_COMMIT_EMAIL: 
