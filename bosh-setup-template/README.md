@@ -6,7 +6,12 @@ This pipeline can check new version of manifests in [cf-deployment](https://gith
 
 ## Structure
 
-In the pipeline, only one job `job-create-certs` is not from [cf-deployment-concourse-tasks](https://github.com/cloudfoundry/cf-deployment-concourse-tasks) repo. This job is used for creating cert, which will be used in the next job `job-run-bbl-up` . Each of other jobs contains exactly one task in  [cf-deployment-concourse-tasks](https://github.com/cloudfoundry/cf-deployment-concourse-tasks) repo, you can get detailed information of them in the [doc](https://github.com/cloudfoundry/cf-deployment-concourse-tasks#tasks).
+The functionality of every job:
+- [check-new-version](https://github.com/CloudFoundryOnAzure/cf-pipeline/tree/master/lib/check-new-version): this job compares manifest in [cf-deployment](https://github.com/cloudfoundry/cf-deployment.git) and [Azure template repo](https://github.com/CloudFoundryOnAzure/cf-pipeline/blob/master/bosh-setup-template/credential.yml#L22-L24), if any new manifest is found in cf-deployment, the new manifest will bump to the template repo. If no new manifest is found, the job will fail and later job will not be triggered.
+- [deploy-cf](https://github.com/CloudFoundryOnAzure/cf-pipeline/tree/master/lib/deploy-cf): this job uses new manifest created in job `check-new-version` and template in [Azure template repo](https://github.com/CloudFoundryOnAzure/cf-pipeline/blob/master/bosh-setup-template/credential.yml#L22-L24) to deploy a cloud foundry. And the credential to login cloud foundry will be uploaded to [config repo](https://github.com/CloudFoundryOnAzure/cf-pipeline/blob/master/bosh-setup-template/credential.yml#L16-L19).
+- [login-cf](https://github.com/CloudFoundryOnAzure/cf-pipeline/tree/master/lib/login-cf): due to the process of creating cf is asynchronous on Azure, this job will continuously try to login cf. The job will pass when it successfully login cf, which indicates the creation of cf is done.
+- [run-cats](https://github.com/cloudfoundry/cf-deployment-concourse-tasks#run-cats): this job uses offical run-cats task, it runs CATs on the cf.
+- [delete-resource-group](https://github.com/CloudFoundryOnAzure/cf-pipeline/tree/master/lib/delete-resource-group): this job deletes all resource created in previous jobs and sends a notification email to the developer.
 
 ## Prerequisite
 
