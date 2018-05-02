@@ -58,6 +58,8 @@ resources:
 
 jobs:
 - name: create-certs-for-application-gateway
+  serial_groups: [main-group]
+  serial: true
   plan:
   - aggregate:
     - {get: cf-deployment-release-candidate, trigger: true}
@@ -73,6 +75,8 @@ jobs:
   - put: store 
     params: {repository: updated-bbl-state, rebase: true}
 - name: bbl-up
+  serial_groups: [main-group]
+  serial: true
   plan:
   - aggregate:
     - {get: bbl-state, resource: store, trigger: true, passed: [create-certs-for-application-gateway]}
@@ -97,6 +101,7 @@ jobs:
     params: {repository: updated-bbl-state , rebase: true}
 
 - name: bosh-upload-stemcell
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
@@ -109,6 +114,7 @@ jobs:
       INFRASTRUCTURE: azure
   
 - name: bosh-deploy-cf
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
@@ -129,6 +135,7 @@ jobs:
     params: {repository: updated-vars-store, rebase: true}
 
 - name: update-integration-configs
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
@@ -148,6 +155,7 @@ jobs:
     params: {repository: updated-integration-configs, rebase: true}  
 
 - name: run-cats
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
@@ -183,6 +191,7 @@ jobs:
             body: email-out/email-body
 
 - name: bosh-delete-cf
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
@@ -192,6 +201,7 @@ jobs:
     file: cf-deployment-concourse-tasks/bosh-delete-deployment/task.yml
 
 - name: bosh-cleanup
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
@@ -201,6 +211,7 @@ jobs:
     file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
 
 - name: bbl-destory
+  serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
