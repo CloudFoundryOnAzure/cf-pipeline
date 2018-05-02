@@ -38,8 +38,8 @@ resources:
 - name: cf-deployment-concourse-tasks
   type: git
   source:
-    branch: pr-request
-    uri: https://github.com/norshtein/cf-deployment-concourse-tasks.git
+    branch: master
+    uri: https://github.com/cloudfoundry/cf-deployment-concourse-tasks.git
 - name: cf-acceptance-tests
   type: git
   source:
