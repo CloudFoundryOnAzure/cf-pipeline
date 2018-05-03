@@ -48,7 +48,7 @@ resources:
 - name: cf-deployment
   type: git
   source:
-    branch: master
+    branch: release-candidate
     uri: https://github.com/cloudfoundry/cf-deployment.git
 - name: cf-pipeline
   type: git
@@ -125,7 +125,7 @@ jobs:
     file: cf-deployment-concourse-tasks/bosh-deploy/task.yml
     params:
       SYSTEM_DOMAIN: {{SYSTEM_DOMAIN}}
-      REGENERATE_VARS_STORE: false
+      REGENERATE_VARS_STORE: true
     input_mapping: 
       vars-store: bbl-state
       ops-files: cf-deployment
