@@ -153,13 +153,23 @@ jobs:
   - put: updated-integration-configs
     resource: store
     params: {repository: updated-integration-configs, rebase: true}  
-
+- name: sleep
+  serial_groups: [main-group]
+  serial: true
+  plan:
+    - aggregate:
+      - {get: store, trigger: true, passed: [update-integration-configs]}
+      - {get: cf-pipeline}
+    - task: sleep
+      file: cf-pipeline/lib/sleep/task.yml
+      params:
+        SLEEP_TIME: 600
 - name: run-cats
   serial_groups: [main-group]
   serial: true
   plan:
   - aggregate:
-    - {get: updated-integration-configs, trigger: true, resource: store, passed: [update-integration-configs]}
+    - {get: updated-integration-configs, trigger: true, resource: store, passed: [sleep]}
     - {get: cf-deployment-concourse-tasks}
     - {get: cf-acceptance-tests}
     - {get: cf-pipeline}
