@@ -46,12 +46,16 @@ resources:
       password: {{smtp-password}}
     from: {{email-from}}
     to: [ {{email-to}} ]  
+- name: timer
+  type: time
+  source: {interval: 168h}
 
 jobs:
 - name: check-new-version
   public: true
   plan:
   - aggregate:
+    - {get: timer, trigger: true}
     - {get: azure-quickstart-templates}
     - {get: cf-pipeline}
   - task: check-new-version
@@ -78,6 +82,8 @@ jobs:
       AZURE_REGION: {{AZURE_REGION}}
       SSH_PUBLIC_KEY: {{SSH_PUBLIC_KEY}}
       SSH_PRIVATE_KEY: {{SSH_PRIVATE_KEY}}
+      GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
+      GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
     input_mapping:
       private-key: integration-configs
       template: azure-quickstart-templates
