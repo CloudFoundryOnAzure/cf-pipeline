@@ -28,5 +28,17 @@ function main() {
   rm page
   popd
 }
-trap commit_azure_templates EXIT
+function create_log_file() {
+  pushd updated-azure-quickstart-templates/${BOSH_SETUP_FOLDER}
+  version=$(sed '3q;d' manifests/cf-deployment.yml | awk '{print $2}')
+  popd
+  pushd updated-azure-quickstart-templates/
+  cat >tag.log <<EOF
+$version
+EOF
+  popd
+}
+
 main
+commit_azure_templates
+create_log_file
