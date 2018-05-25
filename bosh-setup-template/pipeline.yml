@@ -36,6 +36,11 @@ resources:
     branch: {{AZURE_TEMPLATE_BRANCH}}
     uri: {{AZURE_TEMPLATE_REPO_URI}}
     private_key: {{AZURE_TEMPLATE_PRIVATE_KEY}}
+- name: upstream-azure-quickstart-templates
+  type: git
+  source:
+    branch: master
+    uri: https://github.com/Azure/azure-quickstart-templates.git
 - name: send-an-email
   type: email
   source:
@@ -52,25 +57,27 @@ resources:
 
 jobs:
 - name: check-new-version
-  public: true
   plan:
   - aggregate:
     - {get: timer, trigger: true}
-    - {get: azure-quickstart-templates}
+    - {get: upstream-azure-quickstart-templates, params: {submodules: none} }
+    - {get: azure-quickstart-templates, params: {submodules: none} }
     - {get: cf-pipeline}
   - task: check-new-version
     file: cf-pipeline/lib/check-new-version/task.yml
+    input_mapping: 
+      azure-quickstart-templates: upstream-azure-quickstart-templates
     params:
       GIT_COMMIT_USERNAME: {{GIT_COMMIT_USERNAME}}
       GIT_COMMIT_EMAIL: {{GIT_COMMIT_EMAIL}}
   - put: azure-quickstart-templates
-    params: {repository: updated-azure-quickstart-templates, rebase: true}
+    params: {repository: updated-azure-quickstart-templates, force: true, tag: updated-azure-quickstart-templates/tag.log}
+    get_params: {submodules: none} 
 - name: deploy-cf
-  public: true
   plan:
   - aggregate:
     - {get: cf-pipeline}
-    - {get: azure-quickstart-templates, trigger: true, passed: [check-new-version]}
+    - {get: azure-quickstart-templates, trigger: true, passed: [check-new-version], params: {submodules: none} }
     - {get: integration-configs}
   - task: deploy-cf
     file: cf-pipeline/lib/deploy-cf/task.yml
@@ -90,20 +97,30 @@ jobs:
   - put: integration-configs
     params: {repository: updated-integration-configs, rebase: true, force: true}
 - name: login-cf
-  public: true
   plan:
   - aggregate:
     - {get: cf-pipeline}
     - {get: integration-configs, trigger: true, passed: [deploy-cf]}
   - task: login-cf
     file: cf-pipeline/lib/login-cf/task.yml 
+
+- name: sleep
+  plan:
+  - aggregate:
+    - {get: integration-configs, trigger: true, passed: [login-cf]}  
+    - {get: cf-pipeline}
+  - task: sleep
+    file: cf-pipeline/lib/sleep/task.yml
+    params:
+      SLEEP_TIME: 600
+
 - name: run-cats
-  public: true
   plan:
   - aggregate:
     - {get: cf-deployment-concourse-tasks}
-    - {get: integration-configs, trigger: true, passed: [login-cf]}
+    - {get: integration-configs, trigger: true, passed: [sleep]}
     - {get: cf-acceptance-tests}
+    - {get: cf-pipeline}
   - task: run-cats
     file: cf-deployment-concourse-tasks/run-cats/task.yml
     input_mapping:
@@ -111,8 +128,21 @@ jobs:
     params:
       CONFIG_FILE_PATH: {{CONFIG_FILE_PATH}}
       NODES: 2
+    on_failure:
+      task: send-email
+      file: cf-pipeline/lib/send-email/task.yml
+      params:
+        SUBJECT: {{CATS_FAILURE_SUBJECT}}
+        BODY: {{CATS_FAILURE_BODY}}
+        OUTPUT_SUBJECT_FILE_NAME: email-subject
+        OUTPUT_BODY_FILE_NAME: email-body
+      on_success:
+        put: send-an-email
+        params:
+          subject: email-out/email-subject
+          body: email-out/email-body
+ 
 - name: delete-resource-group
-  public: true
   plan:
   - aggregate:
     - {get: cf-pipeline}
@@ -128,8 +158,8 @@ jobs:
       task: send-email
       file: cf-pipeline/lib/send-email/task.yml
       params:
-        SUBJECT: {{SUBJECT}}
-        BODY: {{BODY}}
+        SUBJECT: {{SUCCESS_SUBJECT}}
+        BODY: {{SUCCESS_BODY}}
         OUTPUT_SUBJECT_FILE_NAME: email-subject
         OUTPUT_BODY_FILE_NAME: email-body
       on_success:
