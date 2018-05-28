@@ -4,7 +4,8 @@ set -xeu
 source cf-pipeline/lib/shared-functions
 
 function main() {
-  pushd clean-store
+  git clone clean-store clean-store-copy
+  pushd clean-store-copy
   git commit -m "Refresh" --allow-empty
   popd
 }

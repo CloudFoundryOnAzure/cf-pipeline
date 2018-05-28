@@ -10,7 +10,7 @@ inputs:
 - name: clean-store
 
 outputs:
-- name: clean-store
+- name: clean-store-copy
 
 run: 
   path: cf-pipeline/lib/refresh-store-dir/task
