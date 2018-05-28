@@ -1,0 +1,12 @@
+#!/bin/bash
+set -xeu
+
+source cf-pipeline/lib/shared-functions
+
+function main() {
+  pushd clean-store
+  git commit -m "Refresh" --allow-empty
+  popd
+}
+
+main
