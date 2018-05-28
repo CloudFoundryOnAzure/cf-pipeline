@@ -16,3 +16,6 @@ outputs:
 run: 
   path: cf-pipeline/lib/refresh-store-dir/task
 
+params:
+  GIT_COMMIT_EMAIL: 
+  GIT_COMMIT_USERNAME: 

@@ -6,6 +6,7 @@ source cf-pipeline/lib/shared-functions
 function main() {
   git clone clean-store clean-store-copy
   pushd clean-store-copy
+  set_git_config
   git commit -m "Refresh" --allow-empty
   popd
 }
