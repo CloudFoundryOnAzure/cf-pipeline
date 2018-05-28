@@ -82,9 +82,13 @@ There are two parameters files: `credentials.yml` , `email-credential.yml` . You
   smtp-password: my_password
   email-from: my_username@outlook.com
   email-to: developer_email_address@example.com
-  SUBJECT: "CATs Failed"
-  BODY: "CATs Failed. Please check your pipeline for detailed information" 
+  SUBJECT: "Bump success"
+  BODY: "Bump success"
+  CATS_FAILURE_SUBJECT: "Run CATs Failed in pipeline bosh-setup-template"
+  CATS_FAILURE_BODY: "Please check your pipeline for detailed information"
   ```
+  
+  **Caution**: If you have multiple email receiver, please delete line `email-to` in `email-credential.yml`, and directly edit [to](https://github.com/CloudFoundryOnAzure/cf-pipeline/blob/master/bosh-setup-template/pipeline.yml#L53) field in the pipeline file. For example, if you need to send email to `a@example.com` and `b@example.com`, you should change this line to `to: [ a@example.com, b@example.com ]`.  
 
   You may need to get `smtp-host`, `smtp-port`, `smtp-username`, `smtp-password` from your own  email service provider.
 
