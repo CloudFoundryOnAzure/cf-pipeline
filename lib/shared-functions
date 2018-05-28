@@ -35,3 +35,8 @@ function retryop() {
   fi
   set -e
 }
+
+function set_git_config() {
+  git config user.name "${GIT_COMMIT_USERNAME}"
+  git config user.email "${GIT_COMMIT_EMAIL}"
+}
