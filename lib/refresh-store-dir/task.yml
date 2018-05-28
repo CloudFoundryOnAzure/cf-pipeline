@@ -8,6 +8,7 @@ image_resource:
 
 inputs:
 - name: clean-store
+- name: cf-pipeline
 
 outputs:
 - name: clean-store-copy
