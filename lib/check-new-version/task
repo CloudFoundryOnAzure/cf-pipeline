@@ -19,7 +19,7 @@ function main() {
   stemcell_version=$(awk '/./{line=$0} END{print line}' manifests/cf-deployment.yml | awk '{print $2}' | sed 's/"//g')
   stemcell_url="https://bosh.io/d/stemcells/bosh-azure-hyperv-ubuntu-trusty-go_agent?v=${stemcell_version}"
   china_stemcell_url="https://mirror.azure.cn/bosh/bosh-azure-stemcells/bosh-stemcell-${stemcell_version}-azure-hyperv-ubuntu-trusty-go_agent.tgz"
-  stemcell_sha1=$(cat page | awk '/<span class="file-md5">/' | grep -o ">.* " | awk 'NR==1{print $1}' | cut -b 2-)
+  stemcell_sha1=$(sed -n '/v'"${stemcell_version}"'/{:start /<\/code>/!{N;b start};/.*/p}' page | awk 'END{print $2}' | cut -b 25-64)
 
   change_json_field .variables.environmentAzure.stemcellUrl \"${stemcell_url}\" ${DEPLOY_TEMPLATE}
   change_json_field .variables.environmentAzure.stemcellSha1 \"${stemcell_sha1}\" ${DEPLOY_TEMPLATE}
