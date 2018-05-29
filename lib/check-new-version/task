@@ -13,6 +13,10 @@ function commit_azure_templates() {
   git clone azure-quickstart-templates updated-azure-quickstart-templates
 }
 function main() {
+  # Update sed 
+  apk update
+  apk add sed
+
   pushd azure-quickstart-templates/${BOSH_SETUP_FOLDER}
   ./${SCRIPT_NAME}
   wget http://bosh.cloudfoundry.org/stemcells/bosh-azure-hyperv-ubuntu-trusty-go_agent -O page
