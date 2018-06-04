@@ -53,3 +53,7 @@ params:
   # - Required, you should change to your own
   GIT_COMMIT_USERNAME: 
   GIT_COMMIT_EMAIL: 
+
+  # Artifacts location
+  # - Required, you should change to your repo's raw content address
+  ARTIFACTS_LOCATION: https://raw.githubusercontent.com/<YOUR_USERNAME>/azure-quickstart-templates/<YOUR_BRANCH>/bosh-setup/
