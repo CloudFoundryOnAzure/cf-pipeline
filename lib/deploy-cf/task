@@ -31,6 +31,9 @@ function main() {
     change_json_field .parameters.autoDeployBosh.value \"enabled\" ${PARAMETER_FILE}
     change_json_field .parameters.autoDeployCloudFoundry.value \"enabled\" ${PARAMETER_FILE}
 
+    # Change artifacts location
+    change_json_field .parameters._artifactsLocation.defaultValue \"https://raw.githubusercontent.com/norshtein/azure-quickstart-templates/bump/bosh-setup/\" ${TEMPLATE_FILE}
+
     # Deploy bosh and cf 
     az group deployment create \
         --name Deployment \
