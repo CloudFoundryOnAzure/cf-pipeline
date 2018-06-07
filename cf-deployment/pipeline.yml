@@ -126,6 +126,7 @@ jobs:
     params:
       SYSTEM_DOMAIN: {{SYSTEM_DOMAIN}}
       REGENERATE_VARS_STORE: true
+      OPS_FILES: {{OPS_FILES}}
     input_mapping: 
       vars-store: bbl-state
       ops-files: cf-deployment
