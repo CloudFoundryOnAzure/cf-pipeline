@@ -14,7 +14,7 @@ outputs:
 - name: updated-store
 
 run: 
-  path: cf-pipeline/lib/check-new-version/task
+  path: cf-pipeline/lib/extract-storage-account-credentials/task
 
 params:
   # The Vars File Of BOSH Director, relative to `store` input

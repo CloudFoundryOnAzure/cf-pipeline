@@ -16,17 +16,18 @@ function main() {
   az login --service-principal -u ${BBL_AZURE_CLIENT_ID} -p ${BBL_AZURE_CLIENT_SECRET} --tenant ${BBL_AZURE_TENANT_ID}
   resource_group_name=$(grep "resource_group_name" store/${VARS_FILE} | awk '{print $2}')
   storage_account_name=$(grep "storage_account_name" store/${VARS_FILE} | awk '{print $2}')
-  storage_account_key=$(az storage account keys list -g ${resource_group_name} -n {storage_account_name} | jq '.[0].value')
+  storage_account_key=$(az storage account keys list -g ${resource_group_name} -n ${storage_account_name} | jq '.[0].value')
   pushd store
   cat >storage-account-credentials.yml <<EOF
 environment: AzureCloud
 blobstore_storage_account_name: ${storage_account_name}
 blobstore_storage_access_key: ${storage_account_key}
-app_package_directory_key: cf-deployment-pipline-apps-dir
-buildpack_directory_key: cf-deployment-pipline-buildpacks-dir
-droplet_directory_key: cf-deployment-pipline-droplets-dir
-resource_directory_key: cf-deployment-pipline-resources-dir
+app_package_directory_key: cf-deployment-pipeline-apps-dir
+buildpack_directory_key: cf-deployment-pipeline-buildpacks-dir
+droplet_directory_key: cf-deployment-pipeline-droplets-dir
+resource_directory_key: cf-deployment-pipeline-resources-dir
 EOF
+  popd
 }
 
 trap commit_store EXIT
