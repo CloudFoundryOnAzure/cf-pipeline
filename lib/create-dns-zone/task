@@ -1,0 +1,28 @@
+#!/bin/bash
+set -xeu
+
+source cf-pipeline/lib/shared-functions
+
+function commit_store() {
+  pushd store
+    git config user.name "${GIT_COMMIT_USERNAME}"
+    git config user.email "${GIT_COMMIT_EMAIL}"
+    git add .
+    git commit -m "Add dns zone information"
+  popd
+  git clone store updated-store
+}
+function main() {
+  az login --service-principal -u ${BBL_AZURE_CLIENT_ID} -p ${BBL_AZURE_CLIENT_SECRET} --tenant ${BBL_AZURE_TENANT_ID}
+  
+  ip_address=$(jq '.modules[0].resources."data.azurerm_public_ip.cf-lb".primary.attributes.ip_address' store/${TF_STATE_FILE})
+  az group create --name ${DNS_ZONE_RESOURCE_GROUP} --location ${DNS_ZONE_LOCATION} 
+  az network dns zone create -g ${DNS_ZONE_RESOURCE_GROUP} -n ${SYSTEM_DOMAIN} 
+  az network dns record-set a add-record -g ${DNS_ZONE_RESOURCE_GROUP} -z ${SYSTEM_DOMAIN} -n "*" -a ${ip_address}
+  pushd store
+    jq -n --arg resourceGroup ${DNS_ZONE_RESOURCE_GROUP} '{"resourceGroup":$resorceGroup}' >dns_zone.json
+  popd
+}
+
+trap commit_store EXIT
+main

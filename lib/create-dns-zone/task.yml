@@ -1,0 +1,34 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: microsoft/azure-cli
+
+inputs:
+- name: store
+- name: cf-pipeline
+
+outputs:
+- name: updated-store
+
+run: 
+  path: cf-pipeline/lib/create-dns-zone/task
+
+params:
+  # The terraform state file, relative to `store` input
+  # - Required
+  TF_STATE_FILE: 
+
+  # Azure Configuration Params
+  # - Required, the same with bbl-up
+  BBL_AZURE_CLIENT_ID:
+  BBL_AZURE_CLIENT_SECRET:
+  BBL_AZURE_TENANT_ID: 
+  
+  GIT_COMMIT_USERNAME:
+  GIT_COMMIT_EMAIL:
+
+  # System domain for cloud foundry, this domain should use azure's name server
+  SYSTEM_DOMAIN: 
