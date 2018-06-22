@@ -1,0 +1,25 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: microsoft/azure-cli
+
+inputs:
+- name: store
+- name: cf-pipeline
+
+run: 
+  path: cf-pipeline/lib/delete-dns-zone/task
+
+params:
+  # The resource group name of the dns zone 
+  # - Required
+  DNS_ZONE_RESOURCE_GROUP: 
+
+  # Azure Configuration Params
+  # - Required, the same with bbl-up
+  BBL_AZURE_CLIENT_ID:
+  BBL_AZURE_CLIENT_SECRET:
+  BBL_AZURE_TENANT_ID: 
