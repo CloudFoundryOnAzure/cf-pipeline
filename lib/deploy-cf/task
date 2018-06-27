@@ -35,8 +35,8 @@ function main() {
     change_json_field .parameters._artifactsLocation.defaultValue \"${ARTIFACTS_LOCATION}\" ${TEMPLATE_FILE}
 
     # Change system domain
-    if [ ${SYSTEM_DOMAIN} != ""]; then
-      change_json_field .parameters.cloudFoundrySystemDomain \"${SYSTEM_DOMAIN}\" ${TEMPLATE_FILE}
+    if [ ${SYSTEM_DOMAIN} != "" ]; then
+      change_json_field .parameters.cloudFoundrySystemDomain.value \"${SYSTEM_DOMAIN}\" ${PARAMETER_FILE}
     fi
 
     # Deploy bosh and cf 
@@ -78,7 +78,7 @@ function main() {
 
  
   # Create Azure DNS zone
-  if [ ${SYSTEM_DOMAIN} != ""]; then
+  if [ ${SYSTEM_DOMAIN} != "" ]; then
     ip_address=$(az group deployment show -g ${RESOURCE_GROUP_NAME} -n Deployment --query properties.outputs.cloudFoundryIP.value) 
     az network dns zone create -g ${RESOURCE_GROUP_NAME} -n ${SYSTEM_DOMAIN}
     az network dns record-set a add-record -g ${RESOURCE_GROUP_NAME} -z ${SYSTEM_DOMAIN} -n "*" -a ${ip_address}
