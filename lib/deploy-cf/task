@@ -80,6 +80,7 @@ function main() {
   # Create Azure DNS zone
   if [ ${SYSTEM_DOMAIN} != "" ]; then
     ip_address=$(az group deployment show -g ${RESOURCE_GROUP_NAME} -n Deployment --query properties.outputs.cloudFoundryIP.value) 
+    ip_address="${ip_address:1:-1}"
     az network dns zone create -g ${RESOURCE_GROUP_NAME} -n ${SYSTEM_DOMAIN}
     az network dns record-set a add-record -g ${RESOURCE_GROUP_NAME} -z ${SYSTEM_DOMAIN} -n "*" -a ${ip_address}
   fi
