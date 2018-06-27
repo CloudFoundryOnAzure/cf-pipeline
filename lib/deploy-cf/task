@@ -34,6 +34,11 @@ function main() {
     # Change artifacts location
     change_json_field .parameters._artifactsLocation.defaultValue \"${ARTIFACTS_LOCATION}\" ${TEMPLATE_FILE}
 
+    # Change system domain
+    if [ ${SYSTEM_DOMAIN} != ""]; then
+      change_json_field .parameters.cloudFoundrySystemDomain \"${SYSTEM_DOMAIN}\" ${TEMPLATE_FILE}
+    fi
+
     # Deploy bosh and cf 
     az group deployment create \
         --name Deployment \
@@ -60,15 +65,23 @@ function main() {
   local api_endpoint
   local system_domain
   admin_password=$(grep cf_admin_password cf-deployment-vars.yml | awk '{print $2}')
-  api_endpoint=$(grep -o 'api.*.xip.io' login_cloud_foundry.sh)
+  api_endpoint=$(grep -o 'api.\S\+' login_cloud_foundry.sh)
   system_domain=$(echo $api_endpoint | cut -b 5-)
-  
+ 
   # Generate config file
   if [ -f "integration-configs/${CATS_INTEGRATION_CONFIG_FILE}" ]; then
     local new_cats_integration_config
     new_cats_integration_config=$(cat "integration-configs/${CATS_INTEGRATION_CONFIG_FILE}" | jq ".admin_password=\"${admin_password}\"")
     new_cats_integration_config=$(echo "${new_cats_integration_config}" | jq ".api=\"${api_endpoint}\" | .apps_domain=\"${system_domain}\"")
   echo "${new_cats_integration_config}" > "integration-configs/${CATS_INTEGRATION_CONFIG_FILE}"
+  fi
+
+ 
+  # Create Azure DNS zone
+  if [ ${SYSTEM_DOMAIN} != ""]; then
+    ip_address=$(az group deployment show -g ${RESOURCE_GROUP_NAME} -n Deployment --query properties.outputs.cloudFoundryIP.value) 
+    az network dns zone create -g ${RESOURCE_GROUP_NAME} -n ${SYSTEM_DOMAIN}
+    az network dns record-set a add-record -g ${RESOURCE_GROUP_NAME} -z ${SYSTEM_DOMAIN} -n "*" -a ${ip_address}
   fi
 }
 

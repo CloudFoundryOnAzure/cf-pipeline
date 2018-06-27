@@ -57,3 +57,7 @@ params:
   # Artifacts location
   # - Required, you should change to your repo's raw content address
   ARTIFACTS_LOCATION: https://raw.githubusercontent.com/<YOUR_USERNAME>/azure-quickstart-templates/<YOUR_BRANCH>/bosh-setup/
+
+  # System Domain
+  # - Optional, the system domain of Cloud Foundry, if not set, `.xip.io` will be used
+  SYSTEM_DOMAIN: 
